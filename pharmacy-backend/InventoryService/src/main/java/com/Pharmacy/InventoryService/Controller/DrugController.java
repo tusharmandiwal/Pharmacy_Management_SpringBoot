@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.Pharmacy.InventoryService.Dto.SupplierDto;
@@ -63,5 +64,9 @@ public class DrugController {
 	public ResponseEntity<Double> getDrugCount() {
 		double count = drugService.getDrugCount();
 		return ResponseEntity.ok(count);
+	}
+	@PutMapping("decreaseStock/{name}")
+	public ResponseEntity<Void> decreaseDrugStock(@PathVariable String name,@RequestParam int quantity) {
+		return drugService.decreaseDrugStock(name, quantity);
 	}
 }

@@ -133,4 +133,26 @@ public class DrugServiceImpl implements DrugService {
 		return count;
 	}
 
+	@Override
+	public ResponseEntity<Void> decreaseDrugStock(String drugName, int quantity) {
+		logger.info("Decreasing stock for drug: {} by quantity: {}", drugName, quantity);
+		
+		Optional<Drug> optionalDrug = drugrepo.findByName(drugName);
+		if (!optionalDrug.isPresent()) {
+			logger.error("Drug with name {} not found", drugName);
+			throw new DrugNotFoundException("Drug with name " + drugName + " not found");
+		}
+
+		Drug drug = optionalDrug.get();
+		if (drug.getQuantity() < quantity) {
+			logger.error("Insufficient stock for drug: {}. Available: {}, Requested: {}", drugName, drug.getQuantity(), quantity);
+			throw new DrugNotFoundException("Insufficient stock for drug: " + drugName);
+		}
+
+		drug.setQuantity(drug.getQuantity() - quantity);
+		drugrepo.save(drug);
+		logger.info("Stock decreased successfully for drug: {}. New quantity: {}", drugName, drug.getQuantity());
+		return ResponseEntity.ok().build();
+	}
+
 }

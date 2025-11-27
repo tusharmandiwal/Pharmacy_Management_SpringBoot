@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.pharmacy.Order_Service.client.CartServiceClient;
+import com.pharmacy.Order_Service.client.InventoryServiceClient;
 import com.pharmacy.Order_Service.client.PaymentServiceClient;
 import com.pharmacy.Order_Service.dto.Cart;
 import com.pharmacy.Order_Service.dto.OrderRequest;
@@ -26,16 +27,18 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepo repo;
     private final CartServiceClient cartServiceClient;
     private final PaymentServiceClient paymentServiceClient;
+    private final InventoryServiceClient inventoryServiceClient;
 
 
 
    
     public OrderServiceImpl(OrderRepo repo, CartServiceClient cartServiceClient,
-			PaymentServiceClient paymentServiceClient) {
+			PaymentServiceClient paymentServiceClient, InventoryServiceClient inventoryServiceClient) {
 		super();
 		this.repo = repo;
 		this.cartServiceClient = cartServiceClient;
 		this.paymentServiceClient = paymentServiceClient;
+		this.inventoryServiceClient = inventoryServiceClient;
 	}
 
 	@Override
@@ -135,10 +138,21 @@ public class OrderServiceImpl implements OrderService {
         logger.info("Approving order with ID: {}", orderId);
         
         return repo.findById(orderId).map(order -> {
-            order.setStatus(OrderStatus.APPROVED);
-            return repo.save(order);
-        }).orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
-    }
+        	for(DrugInfo drugInfo : order.getDrugDetails()) {
+			try {
+				inventoryServiceClient.decreaseDrugStock(drugInfo.getDrugName(), drugInfo.getQuantity());
+				logger.info("Decreased stock for drug {} by {}", drugInfo.getDrugName(), drugInfo.getQuantity());
+				} catch (Exception e) {
+					logger.error("Failed to decrease stock for drug {}: {}", drugInfo.getDrugName(), e.getMessage());
+					throw new RuntimeException("Could not decrease stock for drug: " + drugInfo.getDrugName());
+				}
+			}
+			order.setStatus(OrderStatus.APPROVED);
+			return repo.save(order);
+		}).orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
+				}
+		
+    
     @Override
     public Order rejectOrderById(Long orderId) {
         logger.info("Rejecting order with ID: {}", orderId);

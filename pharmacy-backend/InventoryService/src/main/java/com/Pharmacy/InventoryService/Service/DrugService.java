@@ -15,5 +15,6 @@ public interface DrugService {
     ResponseEntity<String> deleteDrug(Long id);
 	ResponseEntity<SupplierDto> getSupplierForDrug(Long drugId);
 	double getDrugCount();
+	ResponseEntity<Void> decreaseDrugStock(String drugName, int quantity);
 	
 }
